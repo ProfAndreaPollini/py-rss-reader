@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="//unpkg.com/alpinejs" defer>
+        Alpine.store('data', {
+    selected: undefined,
+ 
+    items: ['first', 'second', 'third'],
+})
+    </script>
+</head>
+<body>
+    <h1>sources</h1>
+    <div 
+    x-data="{ data: [], selected: undefined, items: [] }"
+    x-init="data = await getData();$watch('selected',UpdateItems)"
+    >
+        <template x-for="d in data">
+            <div>   
+                <h2 x-text="d.category"></h2>
+                <template x-for="source in d.sources">
+                    <span>
+                        <div x-text="source.name" @click="selected = source.id"></div>        
+                        <div x-text="source.url"></div>
+                    </span>
+                </template>
+            </div>
+        </template>
+       
+        <button @click="selected=data[0]">refresh</button>
+
+        
+
+             <template x-data x-for="item in $store.items">
+                <div>
+                    <div x-text="item.title"></div>
+                    <p x-html="item.content"></p>
+                </div>
+            </template> 
+        
+    </div>
+<script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.store('items', [])
+    })
+
+
+    async function UpdateItems(sourceName) {
+        console.log(sourceName)
+        const data = await  fetch(`http://localhost:8080/items/${sourceName}`)
+        .then(response => response.json())
+        console.log(data)
+        Alpine.store('items', data.items)
+    }
+    
+
+    async function  getData() {
+        const data = await  fetch('http://localhost:8080/sources')
+        .then(response => response.json())
+
+        //group data by category
+        const groupedData = data.sources.reduce((acc, item) => {
+            const key = item.category
+            if(!acc[key]) {
+                acc[key] = []
+            }
+            acc[key].push(item)
+            return acc
+        }, {})
+        console.log(groupedData)
+
+        //convert object to array
+        const groupedDataArray = Object.keys(groupedData).map(key => {
+            return {
+                category: key,
+                sources: groupedData[key]
+            }
+        })
+        console.log(groupedDataArray)
+
+        return groupedDataArray
+    }
+</script>
+</body>
+</html>
